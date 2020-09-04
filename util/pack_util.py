@@ -1,0 +1,95 @@
+import os
+import io
+import numpy as np
+import lmdb
+import soundfile
+import librosa
+import random
+
+def get_total(source_list, keep_struct=False):
+    total = 0
+    all_samples = []
+
+    for source in source_list:
+        if not os.path.exists(os.path.expanduser(source)):
+            raise ValueError('data source file is not exists: {}'.format(source))
+
+        extname = os.path.splitext(source)[-1].strip('.').split('.')[-1]
+        if extname in ['lmdb']:
+            env = lmdb.open(os.path.expanduser(source),
+                            readonly=True,
+                            lock=False,
+                            readahead=False,
+                            meminit=False,
+                            map_size=int(2**10))
+            n = env.stat()['entries']
+            total += n
+            samples = [['lmdb', source, i] for i in range(n)]
+            all_samples += [samples] if keep_struct else samples
+            env.close()
+        else:
+            raise NotImplementedError('not implemented: {}'.format(source))
+
+    return total, all_samples
+
+def init_session(source_list):
+    sess_dict = {}
+
+    for source in source_list:
+        if not os.path.exists(os.path.expanduser(source)):
+            raise ValueError('data source file is not exists: {}'.format(source))
+
+        extname = os.path.splitext(source)[-1].strip('.').split('.')[-1]
+        if extname in ['lmdb']:
+            env = lmdb.open(os.path.expanduser(source),
+                            readonly=True,
+                            lock=False,
+                            readahead=True,
+                            map_size=int(2**30))
+            txn = env.begin(write=False)
+            sess_dict.update({source:txn})
+        else:
+            raise NotImplementedError('not implemented: {}'.format(source))
+    return sess_dict
+
+def load_from_soundfile(sf, seconds=-1):
+    frames = seconds * sf.samplerate if seconds > 0 else -1
+    if frames >= sf.frames or frames == -1:
+        data = sf.read(frames)
+    else:
+        offset = random.randint(0, sf.frames-frames-1)
+        # print(offset, frames, sf.frames)
+        sf.seek(offset)
+        data = sf.read(frames)
+    return data, sf.samplerate
+
+def load_from_lmdb(sess, idx, seconds=-1):
+    data = sess.get('{}'.format(idx).encode())
+    buff = io.BytesIO(data)
+    with soundfile.SoundFile(buff) as sf:
+        data, sr = load_from_soundfile(sf, seconds)
+    return data, sr
+
+def load_audio(sample, sess_dict, seconds=-1, pad=True, samplerate=16000):
+    '''
+    sample: list of length 3, the content is ['lmdb', 'lmdb_file_name', index]
+    sess_dict: dict of lmdb env, eg: {'lmdb_file_name1':env1, 'lmdb_file_name2':env2, ...}; we read FLAC from lmdb env
+    secondes: time to read
+    pad: 如果FLAC长度不足senconds，补零
+    samplerate: 如果FLAC解码后不是目标采样率，则重采样
+    '''
+    if sample[0] == 'lmdb':
+        _, sess_key, idx = sample
+        sess = sess_dict[sess_key]
+        data, sr = load_from_lmdb(sess, idx, seconds)
+    else:
+        raise NotImplementedError('not implemented: {}'.format(sample[0]))
+
+    if sr != samplerate:
+        data = librosa.resample(data, sr, samplerate)
+
+    if seconds != -1:
+        cur_len = data.shape[0]
+        if cur_len < seconds * samplerate:
+            data = np.pad(data, [0, seconds*samplerate-cur_len], mode='constant')
+    return data
