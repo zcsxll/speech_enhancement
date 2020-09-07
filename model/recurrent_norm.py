@@ -19,7 +19,7 @@ class Model(torch.nn.Module):
     def __init__(self,
                 fft_size=512,
                 hop_size=256,
-                rnn='GRU',
+                rnn_cell_type='GRU',
                 norm_rnn_cell_size=16,
                 norm_rnn_layers=2,
                 rnn_cell_size=64,
@@ -27,9 +27,9 @@ class Model(torch.nn.Module):
         super(Model, self).__init__()
 
         self.stft = stft.STFT(fft_size, hop_size)
-        if rnn == 'GRU':
+        if rnn_cell_type == 'GRU':
             RNN = torch.nn.GRU
-        elif rnn == 'LSTM':
+        elif rnn_cell_type == 'LSTM':
             RNN = torch.nn.LSTM
         else:
             raise NotImplementedError

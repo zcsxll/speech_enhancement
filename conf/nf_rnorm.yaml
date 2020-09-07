@@ -46,3 +46,26 @@ dataset:
         /local/data/dns.lmdb:
           prob: 0.3
           snr: [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 20, 25]
+
+transform:
+  name: 'transform.pcm_int16.Transform'
+  args:
+    hop_size: 256
+  collate_fn:
+    name: 'transform.pcm_int16.collate_fn'
+
+train:
+  gpu_ids: 0, 1
+  num_epochs: 40
+  dataloader:
+    shuffle: False
+    batch_size: 128
+    num_workers: 16
+  optimizer:
+    name: 'torch.optim.Adam'
+    args:
+      weight_decay: 0.000001
+
+visdom:
+  ip: '10.160.82.54'
+  port: 8899
