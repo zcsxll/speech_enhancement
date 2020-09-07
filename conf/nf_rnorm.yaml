@@ -55,11 +55,12 @@ transform:
     name: 'transform.pcm_int16.collate_fn'
 
 train:
-  gpu_ids: 0, 1
-  num_epochs: 40
+  gpu_ids: 4, 5
+  num_epochs: 20
   dataloader:
     shuffle: False
     batch_size: 128
+    # batch_size: 4
     num_workers: 16
   optimizer:
     name: 'torch.optim.Adam'

@@ -24,7 +24,7 @@ class Dataset(torch.utils.data.Dataset):
         self.noise_prob = np.array(self.noise_prob)
         self.noise_prob = np.exp(self.noise_prob) / np.exp(self.noise_prob).sum()
         self.sess_dict.update(pack_util.init_session(conf['noise'].keys()))
-        self.length, self.noise_samples = pack_util.get_total(conf['noise'].keys(), keep_struct=True)
+        _, self.noise_samples = pack_util.get_total(conf['noise'].keys(), keep_struct=True)
 
     def __getitem__(self, idx):
         clean_sample = self.clean_samples[idx]

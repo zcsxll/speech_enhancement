@@ -39,25 +39,29 @@ def train(conf):
 
     optimizer = import_class(conf['train']['optimizer']['name'])(model.parameters(), **conf['train']['optimizer']['args'])
 
-    for step, (batch_x, batch_y) in enumerate(dataloader):
-        # print(step, batch_x.shape, batch_y.shape)
-        batch_x = batch_x.cuda()
-        batch_y = batch_y.cuda()
-        pred, _ = model(batch_x)
+    zp.B('totally %d steps per epoch' % (len(dataloader)))
+    for epoch in range(conf['train']['num_epochs']):
+        for step, (batch_x, batch_y) in enumerate(dataloader):
+            # print(step, batch_x.shape, batch_y.shape)
 
-        loss = loss_fn(pred, batch_y)
-        print(step, loss)
+            batch_x = batch_x.cuda()
+            batch_y = batch_y.cuda()
+            pred, _ = model(batch_x)
 
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+            loss = loss_fn(pred, batch_y)
+            print(step, loss)
 
-        if step % 20 == 0:
-            vis.append([loss.cpu().detach().numpy()], 'train_loss', opts={'title':'train_loss', 'legend':['loss']})
-        if step % 1000 == 0:
-            torch.save(model.state_dict(), './step_%05d.pth' % step)
-        # if step >= 20:
-        #     break
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+            if step % 20 == 0:
+                vis.append([loss.cpu().detach().numpy()], 'train_loss', opts={'title':'train_loss', 'legend':['loss']})
+            if step % 1000 == 0:
+                torch.save(model.state_dict(), './epoch_%03d_step_%05d.pth' % (epoch, step))
+            # if step >= 20:
+            #     break
+        torch.save(model.state_dict(), './epoch_%03d.pth' % (epoch))
 
 if __name__ == '__main__':
     assert len(sys.argv) == 2

@@ -49,7 +49,7 @@ class Model(torch.nn.Module):
         rnns += [torch.nn.ReLU()]
         rnns += [RNNWrapper(RNN(input_size=rnn_cell_size,
                                 hidden_size=rnn_cell_size,
-                                num_layers=rnn_cell_size,
+                                num_layers=rnn_layers,
                                 batch_first=True))]
         rnns += [torch.nn.Linear(in_features=rnn_cell_size, out_features=fft_size//2)]
         self.rnn = torch.nn.Sequential(*rnns)
