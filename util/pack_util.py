@@ -59,8 +59,12 @@ def load_from_soundfile(sf, seconds=-1):
     else:
         offset = random.randint(0, sf.frames-frames-1)
         # print(offset, frames, sf.frames)
-        sf.seek(offset)
-        data = sf.read(frames)
+        try:
+            sf.seek(offset)
+            data = sf.read(frames)
+        except Exception as e:
+            print('Ignore exception in load_from_soundfile():', sf, e)
+            data = np.zeros(frames, dtype=np.float32)
     return data, sf.samplerate
 
 def load_from_lmdb(sess, idx, seconds=-1):
