@@ -27,6 +27,9 @@ def get_total(source_list, keep_struct=False):
             samples = [['lmdb', source, i] for i in range(n)]
             all_samples += [samples] if keep_struct else samples
             env.close()
+        elif extname in ['flac', 'wav', 'pcm']:
+            samples = [['file', os.path.expanduser(source)]]
+            all_samples += [samples] if keep_struct else samples
         else:
             raise NotImplementedError('not implemented: {}'.format(source))
 
@@ -48,8 +51,8 @@ def init_session(source_list):
                             map_size=int(2**30))
             txn = env.begin(write=False)
             sess_dict.update({source:txn})
-        else:
-            raise NotImplementedError('not implemented: {}'.format(source))
+        # else:
+        #     raise NotImplementedError('not implemented: {}'.format(source))
     return sess_dict
 
 def load_from_soundfile(sf, seconds=-1):
@@ -86,6 +89,20 @@ def load_audio(sample, sess_dict, seconds=-1, pad=True, samplerate=16000):
         _, sess_key, idx = sample
         sess = sess_dict[sess_key]
         data, sr = load_from_lmdb(sess, idx, seconds)
+    elif sample[0] == 'file':
+        filename = sample[1]
+        extname = os.path.splitext(filename)[-1]
+        if extname.lower() in ['.wav', '.flac']:
+            f = soundfile.SoundFile(filename)
+        elif extname.lower() in ['.pcm', '.raw']:
+            f = soundfile.SoundFile(filename,
+                            format='RAW',
+                            channels=1,
+                            samplerate=samplerate,
+                            subtype='PCM_16')
+        else:
+            raise ValueError(f'{sample} is not supported!')
+        data, sr = load_from_soundfile(f, seconds)
     else:
         raise NotImplementedError('not implemented: {}'.format(sample[0]))
 

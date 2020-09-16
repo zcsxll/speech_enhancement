@@ -7,7 +7,7 @@ def find_last_checkpoint(checkpoint_dir):
         if os.path.splitext(name)[-1] == '.pth':
             epochs += [int(name.strip('ckpt_epoch_.pth'))]
     if len(epochs) == 0:
-        raise IOError('no checkpoint is found in {}'.format(checkpoint_dir))
+        raise IOError('no checkpoint found in {}'.format(checkpoint_dir))
     return max(epochs)
 
 def save_checkpoint(checkpoint_dir, epoch, model, optimizer=None):

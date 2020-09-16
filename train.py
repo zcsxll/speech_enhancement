@@ -45,8 +45,10 @@ def get_dev_dataloader(conf):
         drop_last=False)
     return dataloader
 
-def train(model, loss_fn, optimizer, dataloader, vis):
+def train(model, loss_fn, optimizer, dataloader, vis, epoch):
     model.train()
+    pbar = tqdm(total=len(dataloader), bar_format='{l_bar}{r_bar}', dynamic_ncols=True)
+    pbar.set_description(f'Epoch %d' % epoch)
     for step, (batch_x, batch_y) in enumerate(dataloader):
         # print(step, batch_x.shape, batch_y.shape)
 
@@ -55,7 +57,9 @@ def train(model, loss_fn, optimizer, dataloader, vis):
         pred, _ = model(batch_x)
 
         loss = loss_fn(pred, batch_y)
-        print('%d/%d' % (step, len(dataloader)), loss.cpu().detach().numpy())
+        # print('%d/%d' % (step, len(dataloader)), loss.cpu().detach().numpy())
+        pbar.set_postfix(**{'sdr':loss.detach().cpu().item()})
+        pbar.update()
 
         optimizer.zero_grad()
         loss.backward()
@@ -139,7 +143,7 @@ def main(conf):
     # for epoch in range(trained_epoch + 1, conf['train']['num_epochs']):
     for epoch in range(0, conf['train']['num_epochs']):
         validation(model, loss_fn, dev_dataloader, vis, conf)
-        train(model, loss_fn, optimizer, train_dataloader, vis)
+        train(model, loss_fn, optimizer, train_dataloader, vis, epoch)
         sl.save_checkpoint(conf['checkpoint'], epoch, model, optimizer)
 
 if __name__ == '__main__':
