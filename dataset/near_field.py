@@ -51,7 +51,7 @@ class Dataset(torch.utils.data.Dataset):
         mix = np.where(np.isinf(mix), np.zeros_like(mix), mix)
 
         if self.transform is not None:
-            return self.transform(mix, clean)
+            return self.transform(mix, clean, {})
         return mix, clean
 
     def __len__(self):

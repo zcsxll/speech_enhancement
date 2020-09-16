@@ -25,7 +25,7 @@ dataset:
       clean:
         - /local/data/6500h.lmdb
       noise:
-        /local/data/wind-noise.lmdb: 
+        /local/data/wind-noise.lmdb:
           prob: 2
           snr: [-20, -19, -18, -17, -16, -15, -14, -13, -12, -11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0]
         /local/data/wind-noise-record.lmdb:
@@ -65,12 +65,20 @@ train:
   dataloader:
     shuffle: False
     batch_size: 128
-    # batch_size: 4
     num_workers: 16
   optimizer:
     name: 'torch.optim.Adam'
     args:
       weight_decay: 0.000001
+
+eval:
+  dataloader:
+    shuffle: False
+    batch_size: 8
+    num_workers: 16
+  evaluator:
+    name: 'evaluate.stoi_pesq.Evaluator'
+    num_workers: 32
 
 checkpoint:
   './checkpoint/nf'

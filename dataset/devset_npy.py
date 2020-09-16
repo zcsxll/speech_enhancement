@@ -24,13 +24,13 @@ class Dataset(torch.utils.data.Dataset):
         filename = os.path.split(self.files[idx])[-1]
         _, noise_name, snr = filename.replace('.npy', '').split('_')
         
-        extras = {}
-        extras['noise'] = noise_name
-        extras['snr'] = int(snr)
-        extras['name'] = filename
+        extra = {}
+        extra['name'] = filename
+        extra['noise'] = noise_name
+        extra['snr'] = int(snr)
 
         if self.transform is not None:
-            return self.transform(mix, clean)
+            return self.transform(mix, clean, extra)
         return mix, clean
 
     def __len__(self):
@@ -39,20 +39,25 @@ class Dataset(torch.utils.data.Dataset):
 if __name__ == '__main__':
     import yaml
     import soundfile
+    from dynamic_import import import_class
+    sys.path.append(os.path.abspath('.'))
 
     with open('./conf/nf_rnorm.yaml') as fp:
         conf = yaml.safe_load(fp)
 
-    dataset = Dataset(**conf['dataset']['dev']['args'])
+    transform = import_class(conf['transform']['name'])(**conf['transform']['args'])
+    transform.eval()
+    dataset = Dataset(transform=transform, **conf['dataset']['dev']['args'])
     dataloader = torch.utils.data.DataLoader(dataset=dataset,
                                             batch_size=1,
                                             shuffle=False,
                                             num_workers=0,
                                             collate_fn=None)
-    for step, (batch_x, batch_y) in enumerate(dataloader):
+    for step, (batch_x, batch_y, extra) in enumerate(dataloader):
         print('step: %d' % (step), batch_x.shape, batch_y.shape)
+        print(extra.keys())
         # print(batch_x.detach().numpy().shape, type(batch_x.detach().numpy()[0][100]))
-        soundfile.write(file='mix_%d.wav' % step, data=batch_x.detach().numpy()[0], samplerate=16000)
-        soundfile.write(file='clean_%d.wav' % step, data=batch_y.detach().numpy()[0], samplerate=16000)
+        # soundfile.write(file='mix_%d.wav' % step, data=batch_x.detach().numpy()[0], samplerate=16000)
+        # soundfile.write(file='clean_%d.wav' % step, data=batch_y.detach().numpy()[0], samplerate=16000)
         if step == 2:
             break

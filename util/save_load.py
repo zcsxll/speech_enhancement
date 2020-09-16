@@ -29,12 +29,12 @@ def save_checkpoint(checkpoint_dir, epoch, model, optimizer=None):
     else:
         checkpoint['optimizer'] = None
 
-    torch.save(checkpoint, os.path.join(checkpoint_dir, f'ckpt_epoch_{epoch}.pth'))
+    torch.save(checkpoint, os.path.join(checkpoint_dir, 'ckpt_epoch_%02d.pth'% epoch))
 
 def load_checkpoint(checkpoint_dir, epoch=-1):
     if epoch == -1:
         epoch = find_last_checkpoint(checkpoint_dir)
-    checkpoint_name = 'ckpt_epoch_{}.pth'.format(epoch)
+    checkpoint_name = 'ckpt_epoch_%02d.pth'% epoch
     checkpoint_path = os.path.join(checkpoint_dir, checkpoint_name)
     ckpt = torch.load(checkpoint_path, map_location='cpu')
     return ckpt

@@ -4,7 +4,7 @@ import scipy.signal
 import numpy.linalg
 
 
-def stoi(x, y, fs_signal=16000):
+def compute_stoi(x, y, fs_signal=16000):
     '''
     params:
         x: clean speech
