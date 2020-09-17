@@ -69,6 +69,7 @@ def train(model, loss_fn, optimizer, dataloader, vis, epoch):
             vis.append([loss.cpu().detach().numpy()], 'train_loss', opts={'title':'train_loss', 'legend':['loss']})
         # if step >= 50:
         #     break
+    pbar.close()
 
 @torch.no_grad()
 def validation(model, loss_fn, dataloader, vis, conf):
@@ -101,12 +102,12 @@ def validation(model, loss_fn, dataloader, vis, conf):
         avg_stoi[snr].update(e['stoi'] - e['metric']['stoi'])
         avg_pesq[snr].update(e['pesq'] - e['metric']['pesq'])
 
-    # print(avg_loss.avg, avg_stoi.avg, avg_pesq.avg)
-    # vis.append([avg_loss.avg], 'dev_loss', opts={'title':'dev_loss', 'legend':['loss']})
-    # vis.append([avg_stoi.avg, avg_pesq.avg], 'dev_metric', opts={'title':'dev_metric', 'legend':['stoi', 'pesq']})
+        # print(avg_loss.avg, avg_stoi.avg, avg_pesq.avg)
+        # vis.append([avg_loss.avg], 'dev_loss', opts={'title':'dev_loss', 'legend':['loss']})
+        # vis.append([avg_stoi.avg, avg_pesq.avg], 'dev_metric', opts={'title':'dev_metric', 'legend':['stoi', 'pesq']})
     for snr in avg_stoi.keys():
-        print('snr{} stoi: {} items, improve {} in average'.format(snr, avg_stoi[snr].count, avg_stoi[snr].avg))
-        print('snr{} pesq: {} items, improve {} in average'.format(snr, avg_pesq[snr].count, avg_pesq[snr].avg))
+        zp.B('snr{} stoi: {} items, improve {} in average'.format(snr, avg_stoi[snr].count, avg_stoi[snr].avg))
+        zp.B('snr{} pesq: {} items, improve {} in average'.format(snr, avg_pesq[snr].count, avg_pesq[snr].avg))
 
 def main(conf):
     with open(conf) as fp:
@@ -140,8 +141,7 @@ def main(conf):
     except Exception as e:
         zp.B('train from the very begining, {}'.format(e))
         trained_epoch = -1
-    # for epoch in range(trained_epoch + 1, conf['train']['num_epochs']):
-    for epoch in range(0, conf['train']['num_epochs']):
+    for epoch in range(trained_epoch + 1, conf['train']['num_epochs']):
         validation(model, loss_fn, dev_dataloader, vis, conf)
         train(model, loss_fn, optimizer, train_dataloader, vis, epoch)
         sl.save_checkpoint(conf['checkpoint'], epoch, model, optimizer)
