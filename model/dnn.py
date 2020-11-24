@@ -6,7 +6,9 @@ class Model(torch.nn.Module):
         self.fc1 = torch.nn.Linear(in_features=64000, out_features=512)
         self.fc2 = torch.nn.Linear(in_features=512, out_features=512)
         self.fc3 = torch.nn.Linear(in_features=512, out_features=512)
-        self.fc4 = torch.nn.Linear(in_features=512, out_features=64000)
+        self.fc4 = torch.nn.Linear(in_features=512, out_features=512)
+        self.fc5 = torch.nn.Linear(in_features=512, out_features=512)
+        self.fc6 = torch.nn.Linear(in_features=512, out_features=64000)
 
     def forward(self, x):
         if x.dtype == torch.int16:
@@ -18,6 +20,10 @@ class Model(torch.nn.Module):
         x = self.fc3(x)
         x = torch.nn.ReLU()(x)
         x = self.fc4(x)
+        x = torch.nn.ReLU()(x)
+        x = self.fc5(x)
+        x = torch.nn.ReLU()(x)
+        x = self.fc6(x)
         x = torch.nn.Sigmoid()(x)
         return x, None
 

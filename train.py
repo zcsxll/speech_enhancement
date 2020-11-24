@@ -10,6 +10,7 @@ import zcs_print as zp
 import zcs_visdom as zv
 import save_load as sl
 import average_meter as am
+import clip_grad as cg
 
 def get_train_dataloader(conf):
     transform = import_class(conf['transform']['name'])(**conf['transform']['args'])
@@ -45,7 +46,23 @@ def get_dev_dataloader(conf):
         drop_last=False)
     return dataloader
 
-def train(model, loss_fn, optimizer, dataloader, vis, epoch):
+@torch.no_grad()
+def diff(model1, model2):
+    change = 0 
+    for p1, p2 in zip(model1, model2.parameters()):
+        # print(p1, p2)
+        diff = torch.sum(torch.abs(p1-p2))
+        change += diff.detach().cpu().numpy()
+    return change
+
+@torch.no_grad()
+def pclone(model):
+    ret = []
+    for p in model.parameters():
+        ret.append(p.clone())
+    return ret
+
+def train(model, loss_fn, optimizer, dataloader, vis, epoch, conf):
     model.train()
     pbar = tqdm(total=len(dataloader), bar_format='{l_bar}{r_bar}', dynamic_ncols=True)
     pbar.set_description(f'Epoch %d' % epoch)
@@ -61,12 +78,20 @@ def train(model, loss_fn, optimizer, dataloader, vis, epoch):
         pbar.set_postfix(**{'sdr':loss.detach().cpu().item()})
         pbar.update()
 
+        old = pclone(model)
+
         optimizer.zero_grad()
         loss.backward()
+        if conf['train']['grad_clip_value'] is not None:
+            total_grad_norm = cg.clip_grad_norm(model.parameters(), conf['train']['grad_clip_value'])
         optimizer.step()
 
+        change = diff(old, model)
         if step % 10 == 0:
-            vis.append([loss.cpu().detach().numpy()], 'train_loss', opts={'title':'train_loss', 'legend':['loss']})
+            vis.append([loss.cpu().detach().numpy()], 'train_loss_%d' % epoch, opts={'title':'train_loss_%d' % epoch, 'legend':['loss']})
+            vis.append([change, total_grad_norm],
+                        'train_msg_%d' % epoch,
+                        opts={'title':'change_%d' % epoch, 'legend':['change', 'total_grad_norm']})
         # if step >= 50:
         #     break
     pbar.close()
@@ -76,7 +101,7 @@ def validation(model, loss_fn, dataloader, vis, conf):
     model.eval()
     avg_loss = am.AverageMeter()
     datas = []
-    for step, (batch_x, batch_y, extra) in tqdm(enumerate(dataloader)):
+    for step, (batch_x, batch_y, extra) in enumerate(tqdm(dataloader)):
         # print(step, batch_x.shape, batch_y.shape)
 
         batch_x = batch_x.cuda()
@@ -143,9 +168,10 @@ def main(conf):
         trained_epoch = -1
     for epoch in range(trained_epoch + 1, conf['train']['num_epochs']):
         validation(model, loss_fn, dev_dataloader, vis, conf)
-        train(model, loss_fn, optimizer, train_dataloader, vis, epoch)
+        train(model, loss_fn, optimizer, train_dataloader, vis, epoch, conf)
         sl.save_checkpoint(conf['checkpoint'], epoch, model, optimizer)
 
 if __name__ == '__main__':
     assert len(sys.argv) == 2
     main(sys.argv[1])
+    # main('/home/zhaochengshuai/project/speech_enhancement/conf/nf_rnorm.yaml')
