@@ -84,6 +84,7 @@ def train(model, loss_fn, optimizer, dataloader, vis, epoch, conf):
         loss.backward()
         if conf['train']['grad_clip_value'] is not None:
             total_grad_norm = cg.clip_grad_norm(model.parameters(), conf['train']['grad_clip_value'])
+            total_grad_norm = min(total_grad_norm, 100)
         optimizer.step()
 
         change = diff(old, model)
